@@ -2,7 +2,16 @@
  * The time a run gives each provider-calling step: the budget the step's 1.1.x
  * API route declared, so a hung provider fails the step the way a route
  * timeout failed the browser's request, as a retryable failure.
+ *
+ * AOS patch: each budget can be overridden per deployment. Local models and
+ * large interactive scenes need more than the upstream defaults; the defaults
+ * are unchanged when the variable is unset.
  */
+
+function deadlineFromEnv(name: string, fallback: number): number {
+  const raw = Number.parseInt(process.env[name] ?? '', 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : fallback;
+}
 
 /** Per call, in milliseconds. */
 export const STEP_DEADLINES_MS = {
@@ -10,18 +19,18 @@ export const STEP_DEADLINES_MS = {
    * One material's extraction, once a worker runs it (1.1.x declared no
    * budget; the platform's default applied).
    */
-  materialAnalysis: 300_000,
+  materialAnalysis: deadlineFromEnv('OPENMAIC_STEP_DEADLINE_MATERIAL_ANALYSIS_MS', 300_000),
   /** Research (1.1.x declared no budget; the platform's default applied). */
-  research: 300_000,
+  research: deadlineFromEnv('OPENMAIC_STEP_DEADLINE_RESEARCH_MS', 300_000),
   /** The outline, its own stream retries included. */
-  outline: 300_000,
-  agentProfiles: 120_000,
+  outline: deadlineFromEnv('OPENMAIC_STEP_DEADLINE_OUTLINE_MS', 300_000),
+  agentProfiles: deadlineFromEnv('OPENMAIC_STEP_DEADLINE_AGENT_PROFILES_MS', 120_000),
   /** Per attempt. */
-  sceneContent: 300_000,
+  sceneContent: deadlineFromEnv('OPENMAIC_STEP_DEADLINE_SCENE_CONTENT_MS', 300_000),
   /** Per attempt. */
-  sceneActions: 60_000,
+  sceneActions: deadlineFromEnv('OPENMAIC_STEP_DEADLINE_SCENE_ACTIONS_MS', 60_000),
   /** Per clip attempt (POST /api/generate/tts). */
-  narrationClip: 30_000,
+  narrationClip: deadlineFromEnv('OPENMAIC_STEP_DEADLINE_NARRATION_MS', 30_000),
 } as const;
 
 /** A step ran out of its budget. A gateway timeout to the retries: retried. */
